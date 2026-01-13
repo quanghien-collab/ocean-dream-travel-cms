@@ -80,13 +80,6 @@ export default function HomePage() {
         <div className="container-od py-14">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
-              <div className="flex items-center gap-3">
-                <LiveBadge />
-                <span className="text-sm text-slate-500">
-                  Cập nhật tức thì từ Admin
-                </span>
-              </div>
-
               <h1 className="mt-4 text-4xl font-semibold tracking-tight">
                 {settings?.hero_title ?? "Chạm vào giấc mơ biển xanh"}
               </h1>

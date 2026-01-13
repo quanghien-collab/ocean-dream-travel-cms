@@ -79,7 +79,6 @@ export default function AdminToursPage() {
     setMsg(null);
     const { error } = await sb.from("tours").upsert(t);
     if (error) setMsg(error.message);
-    else setMsg("Đã lưu. Website cập nhật realtime.");
     setEditing(null);
     setCreating(false);
   }
