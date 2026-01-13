@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs"; // bắt buộc để dùng File + Buffer
+export const runtime = "nodejs";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,35 +14,34 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({ error: "No file" }, { status: 400 });
+      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    const fileExt = file.name.split(".").pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = `tours/${fileName}`;
+    const ext = file.name.split(".").pop();
+    const filename = `${Date.now()}.${ext}`;
+    const path = `tours/${filename}`;
 
     const { error } = await supabase.storage
       .from("images")
-      .upload(filePath, buffer, {
+      .upload(path, buffer, {
         contentType: file.type,
         upsert: true,
       });
 
     if (error) {
-      console.error(error);
+      console.error("Upload error:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     const { data } = supabase.storage
       .from("images")
-      .getPublicUrl(filePath);
+      .getPublicUrl(path);
 
     return NextResponse.json({ url: data.publicUrl });
   } catch (err: any) {
-    console.error(err);
+    console.error("Server error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
