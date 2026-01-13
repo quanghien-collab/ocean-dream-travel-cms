@@ -1,9 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/contact/page": "app/contact/page.js",
-  "/tours/page": "app/tours/page.js",
-  "/admin/login/page": "app/admin/login/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/site/page": "app/admin/site/page.js",
-  "/admin/tours/page": "app/admin/tours/page.js"
-}
