@@ -29,12 +29,7 @@ export default function Navbar() {
         <nav className="flex items-center gap-3">
           <Link href="/tours" className="btn">Tours</Link>
           <Link href="/contact" className="btn">Liên hệ</Link>
-          {isAdmin ? (
-            <Link href="/admin" className="btn btn-primary">Admin</Link>
-          ) : (
-            <Link href="/admin/login" className="btn">Đăng nhập</Link>
-          )}
-        </nav>
+         </nav>
       </div>
     </header>
   );
