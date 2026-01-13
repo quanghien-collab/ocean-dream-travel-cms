@@ -38,3 +38,24 @@ body {
 .badge {
   @apply inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-black/10 bg-white;
 }
+/* ===========================
+   NAVBAR PRO
+=========================== */
+
+.nav-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 500;
+  color: #0f172a;
+  border: 1px solid #e5e7eb;
+  transition: all 0.25s ease;
+  background: white;
+}
+
+.nav-btn:hover {
+  background: rgb(249 115 22);
+  color: white;
+  border-color: rgb(249 115 22);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35);
+  transform: translateY(-1px);
+}

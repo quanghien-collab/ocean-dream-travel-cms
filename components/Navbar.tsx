@@ -1,35 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { getSupabase } from "@/lib/supabaseClient";
 
 export default function Navbar() {
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const sb = getSupabase();
-    sb.auth.getSession().then(async ({ data }) => {
-      const user = data.session?.user;
-      if (!user) return setIsAdmin(false);
-      // check admin role via profiles table
-      const { data: profile } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
-      setIsAdmin(profile?.role === "admin");
-    });
-  }, []);
-
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/70 backdrop-blur">
-      <div className="container-od flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="h-9 w-9 rounded-2xl" style={{ background: "rgb(var(--brand))" }} />
-          <span>Ocean Dream Travel</span>
-        </Link>
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-slate-200">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="h-16 flex items-center justify-between">
 
-        <nav className="flex items-center gap-3">
-          <Link href="/tours" className="btn">Tours</Link>
-          <Link href="/contact" className="btn">Liên hệ</Link>
-         </nav>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="h-10 w-10 rounded-full bg-orange-500 shadow-md group-hover:scale-105 transition" />
+            <span className="text-lg font-semibold tracking-wide">
+              Ocean Dream Travel
+            </span>
+          </Link>
+
+          {/* Menu */}
+          <nav className="flex items-center gap-3">
+            <Link href="/tours" className="nav-btn">
+              Tours
+            </Link>
+            <Link href="/contact" className="nav-btn">
+              Liên hệ
+            </Link>
+          </nav>
+        </div>
       </div>
     </header>
   );
