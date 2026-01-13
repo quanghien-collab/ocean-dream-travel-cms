@@ -13,11 +13,12 @@ type HeroSlide = {
   cta_text: string | null;
   cta_href: string | null;
   sort_order: number;
-  enabled: boolean;
+  is_active: boolean;
 };
 
 export default function HomePage() {
   const supabase = useMemo(() => getSupabase(), []);
+
   const [settings, setSettings] = useState<SiteSettings | null>(null);
   const [tours, setTours] = useState<Tour[]>([]);
   const [slides, setSlides] = useState<HeroSlide[]>([]);
@@ -25,67 +26,77 @@ export default function HomePage() {
 
   const [idx, setIdx] = useState(0);
 
+  // ================= LOAD DATA =================
   async function loadAll() {
     setLoading(true);
 
-    const [{ data: site }, { data: tourList }, { data: slideList }] = await Promise.all([
-      supabase.from("site_settings").select("*").eq("id", "singleton").maybeSingle(),
-      supabase
-        .from("tours")
-        .select("id,slug,title,subtitle,location,duration,price_vnd,cover_url,visible,sort_order")
-        .eq("visible", true)
-        .order("sort_order", { ascending: true }),
-      supabase
-        .from("hero_slides")
-        .select("id,title,subtitle,image_url,cta_text,cta_href,sort_order,enabled")
-        .eq("enabled", true)
-        .order("sort_order", { ascending: true }),
-    ]);
+    const [{ data: site }, { data: tourList }, { data: slideList }] =
+      await Promise.all([
+        supabase.from("site_settings").select("*").eq("id", "singleton").maybeSingle(),
+
+        supabase
+          .from("tours")
+          .select("id,slug,title,subtitle,location,duration,price_vnd,cover_url,visible,sort_order")
+          .eq("visible", true)
+          .order("sort_order", { ascending: true }),
+
+        supabase
+          .from("hero_slides")
+          .select("id,title,subtitle,image_url,cta_text,cta_href,sort_order,is_active")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true }),
+      ]);
 
     if (site) {
       setSettings(site as SiteSettings);
-      if ((site as any).theme_rgb) document.documentElement.style.setProperty("--brand", (site as any).theme_rgb);
+      if ((site as any).theme_rgb) {
+        document.documentElement.style.setProperty("--brand", (site as any).theme_rgb);
+      }
     }
 
     setTours((tourList ?? []) as Tour[]);
     setSlides((slideList ?? []) as HeroSlide[]);
+    setIdx(0); // reset về slide đầu tiên mỗi lần reload
+
     setLoading(false);
   }
 
-  // auto slide
+  // ================= AUTO SLIDE =================
   useEffect(() => {
     if (!slides.length) return;
-    setIdx(0);
-    const t = setInterval(() => setIdx((x) => (x + 1) % slides.length), 5000);
-    return () => clearInterval(t);
-  }, [slides.length]);
 
+    const t = setInterval(() => {
+      setIdx((x) => (x + 1) % slides.length);
+    }, 5000);
+
+    return () => clearInterval(t);
+  }, [slides]);
+
+  // ================= REALTIME =================
   useEffect(() => {
     loadAll();
 
-    const chSettings = supabase
-      .channel("realtime-site-settings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, () => loadAll())
-      .subscribe();
-
-    const chTours = supabase
-      .channel("realtime-tours")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tours" }, () => loadAll())
-      .subscribe();
-
     const chSlides = supabase
       .channel("realtime-hero-slides")
-      .on("postgres_changes", { event: "*", schema: "public", table: "hero_slides" }, () => loadAll())
+      .on("postgres_changes", { event: "*", schema: "public", table: "hero_slides" }, () => {
+        loadAll();
+      })
+      .subscribe();
+
+    const chSettings = supabase
+      .channel("realtime-site-settings")
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_settings" }, () => {
+        loadAll();
+      })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(chSettings);
-      supabase.removeChannel(chTours);
       supabase.removeChannel(chSlides);
+      supabase.removeChannel(chSettings);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ================= DATA =================
   const brandName = settings?.brand_name ?? "Ocean Dream Travel";
   const heroTitle = settings?.hero_title ?? "Chạm vào giấc mơ biển xanh";
   const heroSubtitle = settings?.hero_subtitle ?? "Tour chất lượng – resort xịn – trải nghiệm đáng tiền.";
@@ -93,16 +104,23 @@ export default function HomePage() {
   const active = slides[idx];
   const heroImage = active?.image_url || settings?.hero_image_url || "";
 
+  // ================= UI =================
   return (
     <main>
-      {/* HERO PRO */}
+      {/* HERO SLIDER */}
       <section className="relative overflow-hidden bg-white">
         <div className="container-od py-10 md:py-14">
           <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
-            {/* Left */}
+
+            {/* LEFT */}
             <div className="max-w-2xl">
-              <h1 className="text-4xl font-semibold tracking-tight">{active?.title ?? heroTitle}</h1>
-              <p className="mt-3 text-base text-slate-600">{active?.subtitle ?? heroSubtitle}</p>
+              <h1 className="text-4xl font-semibold tracking-tight">
+                {active?.title ?? heroTitle}
+              </h1>
+
+              <p className="mt-3 text-base text-slate-600">
+                {active?.subtitle ?? heroSubtitle}
+              </p>
 
               <div className="mt-4 flex flex-wrap gap-2 text-sm">
                 <span className="badge">✅ Tour chọn lọc</span>
@@ -119,43 +137,47 @@ export default function HomePage() {
                 </a>
               </div>
 
-              {/* Search box đơn giản */}
               <div className="mt-6 card p-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-                <input className="input flex-1" placeholder="Bạn muốn đi đâu? (VD: Phú Quốc, Đà Lạt...)" />
-                <a href="/tours" className="btn btn-primary sm:w-auto w-full">Tìm tour</a>
+                <input
+                  className="input flex-1"
+                  placeholder="Bạn muốn đi đâu? (VD: Phú Quốc, Đà Lạt...)"
+                />
+                <a href="/tours" className="btn btn-primary sm:w-auto w-full">
+                  Tìm tour
+                </a>
               </div>
             </div>
 
-            {/* Right: Slider Image */}
+            {/* RIGHT IMAGE */}
             <div className="card w-full overflow-hidden">
               <div className="relative aspect-[16/10] bg-slate-100">
                 {heroImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={heroImage}
-                    src={heroImage}
+                    src={`${heroImage}?v=${Date.now()}`}   // force reload cache
                     alt={brandName}
                     className="h-full w-full object-cover transition-opacity duration-500"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-slate-500">
-                    Admin upload ảnh banner để thay thế
+                    Admin upload ảnh banner để hiển thị
                   </div>
                 )}
 
-                {/* Dots */}
-                {slides.length > 1 ? (
+                {/* DOTS */}
+                {slides.length > 1 && (
                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
                     {slides.map((s, i) => (
                       <button
                         key={s.id}
                         onClick={() => setIdx(i)}
-                        className={`h-2.5 w-2.5 rounded-full ${i === idx ? "bg-slate-900" : "bg-slate-300"}`}
-                        aria-label={`slide-${i}`}
+                        className={`h-2.5 w-2.5 rounded-full ${
+                          i === idx ? "bg-slate-900" : "bg-slate-300"
+                        }`}
                       />
                     ))}
                   </div>
-                ) : null}
+                )}
               </div>
 
               <div className="p-5">
@@ -170,12 +192,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FEATURED TOURS */}
+      {/* TOURS */}
       <section className="container-od py-12">
         <div className="flex items-end justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold">Tour nổi bật</h2>
-          </div>
+          <h2 className="text-2xl font-semibold">Tour nổi bật</h2>
           <a className="btn" href="/tours">Xem tất cả</a>
         </div>
 
@@ -184,7 +204,6 @@ export default function HomePage() {
         ) : tours.length === 0 ? (
           <div className="mt-6 card p-6">
             <p className="text-slate-700 font-medium">Chưa có tour.</p>
-            <p className="muted mt-1">Vào Admin → Tours → Thêm tour.</p>
           </div>
         ) : (
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
