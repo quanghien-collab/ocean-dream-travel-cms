@@ -175,7 +175,6 @@ export default function HomePage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">Tour nổi bật</h2>
-            <p className="mt-1 text-slate-600">Admin thêm/sửa tour là khách thấy ngay.</p>
           </div>
           <a className="btn" href="/tours">Xem tất cả</a>
         </div>
