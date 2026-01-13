@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const pathname = usePathname();
+
+  // Chỉ hiện nút Admin khi đang ở trang /admin
   const isAdminPage = pathname.startsWith("/admin");
 
   return (
@@ -26,7 +28,7 @@ export default function Navbar() {
             Liên hệ
           </Link>
 
-          {/* Chỉ hiện khi đang ở admin */}
+          {/* Chỉ hiển thị khi đang ở admin */}
           {isAdminPage && (
             <Link href="/admin" className="btn btn-primary">
               Admin
