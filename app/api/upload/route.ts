@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,17 +14,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file" }, { status: 400 });
   }
 
-  const fileName = `${Date.now()}-${file.name}`;
+  const ext = file.name.split(".").pop();
+  const fileName = `covers/${Date.now()}.${ext}`;
 
-  const { error } = await supabase.storage
-    .from("images")
-    .upload(fileName, file, { upsert: true });
+  const { data, error } = await supabase.storage
+    .from("tour-covers")
+    .upload(fileName, file, {
+      contentType: file.type,
+      upsert: true,
+    });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const { data } = supabase.storage.from("images").getPublicUrl(fileName);
+  const { data: publicUrl } = supabase.storage
+    .from("tour-covers")
+    .getPublicUrl(fileName);
 
-  return NextResponse.json({ url: data.publicUrl });
+  return NextResponse.json({ url: publicUrl.publicUrl });
 }
