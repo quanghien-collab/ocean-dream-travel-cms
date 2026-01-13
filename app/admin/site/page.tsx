@@ -116,37 +116,30 @@ const { data: h, error: e2 } = await sb
     else setMsg("Đã lưu. Trang chủ cập nhật ngay.");
   }
 
-  async function addSlide() {
-    setMsg(null);
-    setBusyGlobal(true);
+async function addSlide() {
+  const defaultImage = form.hero_image_url;
 
-    const maxOrder = slides.length
-      ? Math.max(...slides.map((x) => x.sort_order))
-      : 0;
-
-    // ✅ dùng hero_image_url nếu có, không có thì dùng placeholder
-    const safeImage = (form.hero_image_url || "").trim() || PLACEHOLDER_BANNER;
-
-    const { error } = await sb.from("hero_slides").insert({
-      title: "Banner mới",
-      subtitle: "Mô tả ngắn (có thể để trống)",
-      cta_text: "Xem tour hot",
-      cta_href: "/tours",
-      image_url: safeImage,      // ✅ không null
-      is_active: true,
-      sort_order: maxOrder + 10,
-    });
-
-    setBusyGlobal(false);
-
-    if (error) {
-      setMsg(error.message);
-      return;
-    }
-
-    setMsg("Đã thêm banner mới.");
-    await loadAll(); // ✅ QUAN TRỌNG: để hiện form ngay
+  if (!defaultImage) {
+    setMsg("Chưa có Hero image URL mặc định.");
+    return;
   }
+
+  const maxOrder = slides.length ? Math.max(...slides.map(x => x.sort_order)) : 0;
+
+  const { error } = await sb.from("hero_slides").insert({
+    title: "Banner mới",
+    subtitle: "Mô tả ngắn (có thể để trống)",
+    cta_text: "Xem tour hot",
+    cta_href: "/tours",
+    image_url: defaultImage,   // ← không còn null
+    is_active: true,
+    sort_order: maxOrder + 10,
+  });
+
+  if (error) setMsg(error.message);
+  else setMsg("Đã thêm banner mới.");
+}
+
 
   async function patchSlide(id: string, patch: Partial<HeroSlide>) {
     setMsg(null);
