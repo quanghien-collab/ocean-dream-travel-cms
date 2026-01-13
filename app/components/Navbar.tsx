@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 export default function Navbar() {
   const pathname = usePathname();
 
-  // Chỉ hiện nút Admin khi đang ở trang /admin
-  const isAdminPage = pathname.startsWith("/admin");
+  // Nếu là trang admin thì KHÔNG render navbar public
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <header className="border-b bg-white">
@@ -18,7 +18,7 @@ export default function Navbar() {
           Ocean Dream Travel
         </Link>
 
-        {/* Menu */}
+        {/* Menu public */}
         <nav className="flex items-center gap-3">
           <Link href="/tours" className="btn">
             Tours
@@ -28,12 +28,7 @@ export default function Navbar() {
             Liên hệ
           </Link>
 
-          {/* Chỉ hiển thị khi đang ở admin */}
-          {isAdminPage && (
-            <Link href="/admin" className="btn btn-primary">
-              Admin
-            </Link>
-          )}
+          {/* KHÔNG CÓ ADMIN Ở ĐÂY */}
         </nav>
       </div>
     </header>
