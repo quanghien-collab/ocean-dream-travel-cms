@@ -97,23 +97,30 @@ export default function SiteSettingsPage() {
     else setMsg("Đã lưu. Trang chủ cập nhật ngay.");
   }
 
-  async function addSlide() {
-    setMsg(null);
-    const maxOrder = slides.length ? Math.max(...slides.map((x) => x.sort_order)) : 0;
+async function addSlide() {
+  setMsg(null);
 
-    const { error } = await sb.from("hero_slides").insert({
-      title: "Banner mới",
-      subtitle: "Mô tả ngắn (có thể để trống)",
-      cta_text: "Xem tour hot",
-      cta_href: "/tours",
-      image_url: form.hero_image_url,
-      is_active: true,
-      sort_order: maxOrder + 10,
-    });
+  const maxOrder = slides.length
+    ? Math.max(...slides.map((x) => x.sort_order ?? 0))
+    : 0;
 
-    if (error) setMsg(error.message);
-    else setMsg("Đã thêm banner mới.");
+  const { error } = await sb.from("hero_slides").insert({
+    title: "Banner mới",
+    subtitle: "",
+    cta_text: "Xem tour hot",
+    cta_href: "/tours",
+    image_url: null,
+    is_active: true,
+    sort_order: maxOrder + 10,
+  });
+
+  if (error) {
+    setMsg(error.message);
+  } else {
+    setMsg("Đã thêm banner mới.");
+    await loadAll();   // 🔥 BẮT BUỘC reload để render form ngay
   }
+}
 
   async function patchSlide(id: string, patch: Partial<HeroSlide>) {
     setMsg(null);
