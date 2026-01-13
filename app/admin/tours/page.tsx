@@ -65,20 +65,13 @@ export default function AdminToursPage() {
     return () => {
       sb.removeChannel(ch);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // tránh leak preview blob url
-  useEffect(() => {
-    return () => {
-      if (preview && preview.startsWith("blob:")) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
 
   async function saveTour(t: Partial<TourRow>) {
     setMsg(null);
     const { error } = await sb.from("tours").upsert(t);
     if (error) setMsg(error.message);
+    else setMsg("Đã lưu. Website cập nhật realtime.");
     setEditing(null);
     setCreating(false);
   }
@@ -90,45 +83,39 @@ export default function AdminToursPage() {
     else setMsg("Đã xóa.");
   }
 
-  // Upload ảnh
+  // ✅ Upload ảnh trực tiếp lên Supabase Storage
   async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    setMsg(null);
-
-    // preview ngay
-    const blobUrl = URL.createObjectURL(file);
-    setPreview(blobUrl);
+    if (!file || !editing) return;
 
     setUploading(true);
+    setMsg(null);
+
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      const ext = file.name.split(".").pop();
+      const fileName = `tour-${Date.now()}.${ext}`;
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
+      // Upload lên bucket images
+      const { error } = await sb.storage
+        .from("images")
+        .upload(fileName, file, { upsert: false });
 
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Upload failed");
-      }
+      if (error) throw error;
 
-      const data = await res.json();
+      // Lấy public URL
+      const { data } = sb.storage.from("images").getPublicUrl(fileName);
 
-      if (!data?.url) throw new Error("Không nhận được url từ server");
+      // Preview ngay
+      setPreview(data.publicUrl);
 
-      // dùng functional update để không bị stale state
-      setEditing((prev) => (prev ? { ...prev, cover_url: data.url } : prev));
+      // Gán URL vào form
+      setEditing({ ...editing, cover_url: data.publicUrl });
+
       setMsg("Upload ảnh thành công.");
     } catch (err: any) {
-      setMsg(err?.message || "Upload lỗi");
-      // nếu upload lỗi thì vẫn giữ preview để Tiến sĩ biết file đã chọn
+      setMsg("Upload lỗi: " + err.message);
     } finally {
       setUploading(false);
-      // reset input để chọn lại đúng file vẫn trigger change
       e.target.value = "";
     }
   }
@@ -154,24 +141,17 @@ export default function AdminToursPage() {
         </button>
       </div>
 
-      {msg ? <p className="mt-4 text-sm text-emerald-700">{msg}</p> : null}
+      {msg && <p className="mt-4 text-sm text-emerald-700">{msg}</p>}
 
       <div className="mt-6 grid gap-4">
         {rows.map((r) => (
           <div key={r.id} className="card p-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex justify-between">
               <div>
                 <p className="font-semibold">{r.title}</p>
                 <p className="text-sm text-slate-600">
                   /{r.slug} • {r.location ?? "—"} • {r.duration ?? "—"}
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                  <span className="badge">Visible: {r.visible ? "Yes" : "No"}</span>
-                  <span className="badge">Order: {r.sort_order ?? "—"}</span>
-                  {typeof r.price_vnd === "number" ? (
-                    <span className="badge">Price: {r.price_vnd.toLocaleString("vi-VN")} đ</span>
-                  ) : null}
-                </div>
               </div>
 
               <div className="flex gap-2">
@@ -180,8 +160,7 @@ export default function AdminToursPage() {
                   onClick={() => {
                     setCreating(false);
                     setEditing(r);
-                    setPreview(r.cover_url ?? null);
-                    setMsg(null);
+                    setPreview(r.cover_url);
                   }}
                 >
                   Sửa
@@ -195,116 +174,52 @@ export default function AdminToursPage() {
         ))}
       </div>
 
-      {editing ? (
+      {editing && (
         <div className="mt-8 card p-6 bg-slate-50">
-          <h2 className="text-lg font-semibold">{creating ? "Tạo tour mới" : "Sửa tour"}</h2>
+          <h2 className="text-lg font-semibold">
+            {creating ? "Tạo tour mới" : "Sửa tour"}
+          </h2>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
-            <div>
-              <label className="label">Slug</label>
-              <input
-                className="input"
-                value={editing.slug}
-                onChange={(e) => setEditing({ ...editing, slug: e.target.value })}
-              />
-            </div>
+            <input className="input" placeholder="Slug"
+              value={editing.slug}
+              onChange={(e) => setEditing({ ...editing, slug: e.target.value })}
+            />
 
-            <div>
-              <label className="label">Title</label>
-              <input
-                className="input"
-                value={editing.title}
-                onChange={(e) => setEditing({ ...editing, title: e.target.value })}
-              />
-            </div>
+            <input className="input" placeholder="Title"
+              value={editing.title}
+              onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+            />
 
-            <div>
-              <label className="label">Subtitle</label>
-              <input
-                className="input"
-                value={editing.subtitle ?? ""}
-                onChange={(e) => setEditing({ ...editing, subtitle: e.target.value })}
-              />
-            </div>
+            <input className="input" placeholder="Location"
+              value={editing.location ?? ""}
+              onChange={(e) => setEditing({ ...editing, location: e.target.value })}
+            />
 
-            <div>
-              <label className="label">Location</label>
-              <input
-                className="input"
-                value={editing.location ?? ""}
-                onChange={(e) => setEditing({ ...editing, location: e.target.value })}
-              />
-            </div>
+            <input className="input" placeholder="Duration"
+              value={editing.duration ?? ""}
+              onChange={(e) => setEditing({ ...editing, duration: e.target.value })}
+            />
 
-            <div>
-              <label className="label">Duration</label>
-              <input
-                className="input"
-                value={editing.duration ?? ""}
-                onChange={(e) => setEditing({ ...editing, duration: e.target.value })}
-                placeholder="VD: 2 ngày 1 đêm"
-              />
-            </div>
-
-            <div>
-              <label className="label">Price VND</label>
-              <input
-                className="input"
-                type="number"
-                value={editing.price_vnd ?? 0}
-                onChange={(e) => setEditing({ ...editing, price_vnd: Number(e.target.value) })}
-              />
-            </div>
+            <input className="input" type="number" placeholder="Price"
+              value={editing.price_vnd ?? 0}
+              onChange={(e) => setEditing({ ...editing, price_vnd: Number(e.target.value) })}
+            />
 
             <div className="lg:col-span-2">
               <label className="label">Cover Image (upload từ máy)</label>
-
               <input type="file" accept="image/*" onChange={handleUpload} />
 
-              {uploading ? <p className="mt-1 text-sm text-blue-600">Đang upload ảnh...</p> : null}
+              {uploading && <p className="text-blue-600">Đang upload ảnh...</p>}
 
-              {preview ? (
-                <img
-                  src={preview}
-                  alt="preview"
-                  className="mt-2 w-72 rounded border shadow"
-                />
-              ) : null}
+              {preview && (
+                <img src={preview} className="mt-2 w-72 rounded border shadow" />
+              )}
             </div>
 
             <div className="lg:col-span-2">
-              <label className="label">Cover URL</label>
+              <label className="label">Cover URL (tự động)</label>
               <input className="input" value={editing.cover_url ?? ""} readOnly />
-            </div>
-
-            <div className="lg:col-span-2">
-              <label className="label">Content HTML</label>
-              <textarea
-                className="input min-h-[180px]"
-                value={editing.content_html ?? ""}
-                onChange={(e) => setEditing({ ...editing, content_html: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="label">Sort order</label>
-              <input
-                className="input"
-                type="number"
-                value={editing.sort_order ?? 1}
-                onChange={(e) => setEditing({ ...editing, sort_order: Number(e.target.value) })}
-              />
-            </div>
-
-            <div className="flex items-end gap-3">
-              <label className="label flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={editing.visible}
-                  onChange={(e) => setEditing({ ...editing, visible: e.target.checked })}
-                />
-                Visible
-              </label>
             </div>
           </div>
 
@@ -312,10 +227,6 @@ export default function AdminToursPage() {
             <button
               className="btn btn-primary"
               onClick={() => {
-                if (!editing.slug || !editing.title) {
-                  setMsg("Slug và Title là bắt buộc.");
-                  return;
-                }
                 const payload: any = { ...editing };
                 if (payload.id === "new") delete payload.id;
                 saveTour(payload);
@@ -324,12 +235,12 @@ export default function AdminToursPage() {
               Lưu
             </button>
 
-            <button className="btn" onClick={() => { setEditing(null); setCreating(false); }}>
+            <button className="btn" onClick={() => setEditing(null)}>
               Hủy
             </button>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

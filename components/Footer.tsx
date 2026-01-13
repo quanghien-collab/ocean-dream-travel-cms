@@ -4,7 +4,6 @@ export default function Footer() {
       <div className="container-od py-10 text-sm text-slate-600">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Ocean Dream Travel. All rights reserved.</p>
-          <p className="muted">CMS realtime chạy Vercel + Supabase.</p>
         </div>
       </div>
     </footer>
