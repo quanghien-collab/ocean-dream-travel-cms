@@ -59,11 +59,11 @@ export default function SiteSettingsPage() {
     }
     setForm((s ?? DEFAULT) as SiteSettings);
 
-    const { data: h, error: e2 } = await sb
-      .from("hero_slides")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("updated_at", { ascending: false });
+const { data: h, error: e2 } = await sb
+  .from("hero_slides")
+  .select("*")
+  .order("sort_order", { ascending: true });
+
 
     if (e2) {
       setMsg(e2.message);
