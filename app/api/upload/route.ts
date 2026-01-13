@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // dùng service role cho upload
 );
 
 export async function POST(req: Request) {
@@ -12,35 +12,32 @@ export async function POST(req: Request) {
     const file = formData.get("file") as File;
 
     if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      return NextResponse.json({ error: "No file" }, { status: 400 });
     }
 
-    const ext = file.name.split(".").pop();
-    const fileName = `cover_${Date.now()}.${ext}`;
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = `tours/${fileName}`;
 
     const { error } = await supabase.storage
       .from("images")
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: false,
+      .upload(filePath, file, {
         contentType: file.type,
+        upsert: true,
       });
 
     if (error) {
-      console.error(error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const { data: publicData } = supabase.storage
+    const { data } = supabase.storage
       .from("images")
-      .getPublicUrl(fileName);
+      .getPublicUrl(filePath);
 
     return NextResponse.json({
-      url: publicData.publicUrl,
+      url: data.publicUrl,
     });
-
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
