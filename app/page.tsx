@@ -206,11 +206,11 @@ export default function HomePage() {
             <p className="text-slate-700 font-medium">Chưa có tour.</p>
           </div>
         ) : (
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {tours.slice(0, 6).map((tour) => (
-              <TourCard key={tour.id} tour={tour} />
-            ))}
-          </div>
+<div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+  {tours.map((tour) => (
+    <TourCard key={tour.id} tour={tour} />
+  ))}
+</div>
         )}
       </section>
     </main>
