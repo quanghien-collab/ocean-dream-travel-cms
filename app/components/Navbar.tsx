@@ -5,30 +5,27 @@ import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const pathname = usePathname();
-
-  // Nếu là trang admin thì KHÔNG render navbar public
-  if (pathname.startsWith("/admin")) return null;
+  const lang = pathname.startsWith("/en") ? "en" : "vi";
 
   return (
-    <header className="border-b bg-white">
+    <header className="bg-white border-b">
       <div className="container-od flex items-center justify-between py-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 font-semibold text-lg">
-          <div className="h-9 w-9 rounded-full bg-orange-500" />
-          Ocean Dream Travel
+
+        {/* LOGO */}
+        <Link href={`/${lang}`} className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-orange-500"></div>
+          <span className="font-semibold text-lg">Ocean Dream Travel</span>
         </Link>
 
-        {/* Menu public */}
-        <nav className="flex items-center gap-3">
-          <Link href="/tours" className="btn">
-            Tours
+        {/* MENU */}
+        <nav className="flex gap-3">
+          <Link href={`/${lang}/tours`} className="nav-btn">
+            {lang === "vi" ? "Tours" : "Tours"}
           </Link>
 
-          <Link href="/contact" className="btn">
-            Liên hệ
+          <Link href={`/${lang}/contact`} className="nav-btn">
+            {lang === "vi" ? "Liên hệ" : "Contact"}
           </Link>
-
-          {/* KHÔNG CÓ ADMIN Ở ĐÂY */}
         </nav>
       </div>
     </header>

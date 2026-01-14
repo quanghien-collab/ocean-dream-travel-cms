@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import TourCard, { Tour } from "@/components/TourCard";
+import TourCard, { Tour } from "@/app/components/TourCard";
 import { getSupabase } from "@/lib/supabaseClient";
 
 export default function ToursPage() {
