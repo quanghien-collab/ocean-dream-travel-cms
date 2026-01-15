@@ -1,19 +1,11 @@
 "use client";
 
-import Link from "next/link";
-
 export type Tour = {
   id: string;
   slug: string;
 
-  // dữ liệu hiển thị theo ngôn ngữ
-  title: string;
-  description?: string;
-  location?: string;
-
-  // dữ liệu gốc song ngữ (nếu cần dùng ở nơi khác)
-  title_vi?: string;
-  title_en?: string;
+  title_vi: string;
+  title_en: string;
   description_vi?: string;
   description_en?: string;
   location_vi?: string;
@@ -31,18 +23,23 @@ export default function TourCard({
   tour: Tour;
   lang?: "vi" | "en";
 }) {
+  const title = lang === "vi" ? tour.title_vi : tour.title_en;
+  const description =
+    lang === "vi" ? tour.description_vi : tour.description_en;
+  const location =
+    lang === "vi" ? tour.location_vi : tour.location_en;
+
   return (
-    <Link
+    <a
       href={`/${lang}/tours/${tour.slug}`}
       className="card overflow-hidden hover:shadow-lg transition"
     >
       {/* Cover */}
       <div className="h-[220px] bg-slate-100 overflow-hidden">
         {tour.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={tour.cover_url}
-            alt={tour.title}
+            alt={title}
             className="w-full h-full object-cover"
             loading="lazy"
           />
@@ -56,29 +53,25 @@ export default function TourCard({
       {/* Info */}
       <div className="p-5">
         <h3 className="font-semibold text-lg leading-snug line-clamp-2">
-          {tour.title}
+          {title}
         </h3>
 
-        {tour.description ? (
+        {description && (
           <p className="mt-1 text-sm text-slate-600 line-clamp-2">
-            {tour.description}
+            {description}
           </p>
-        ) : null}
+        )}
 
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          {tour.location ? <span className="badge">📍 {tour.location}</span> : null}
-          {tour.duration ? <span className="badge">⏱ {tour.duration}</span> : null}
-
-          {typeof tour.price_vnd === "number" ? (
+          {location && <span className="badge">📍 {location}</span>}
+          {tour.duration && <span className="badge">⏱ {tour.duration}</span>}
+          {typeof tour.price_vnd === "number" && (
             <span className="badge">
-              💰{" "}
-              {lang === "vi"
-                ? tour.price_vnd.toLocaleString("vi-VN") + " đ"
-                : tour.price_vnd.toLocaleString("en-US") + " VND"}
+              💰 {tour.price_vnd.toLocaleString("vi-VN")} đ
             </span>
-          ) : null}
+          )}
         </div>
       </div>
-    </Link>
+    </a>
   );
 }

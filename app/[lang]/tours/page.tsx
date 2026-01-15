@@ -1,45 +1,65 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import TourCard, { Tour } from "@/app/components/TourCard";
+import TourCard from "@/app/components/TourCard";
 import { getSupabase } from "@/lib/supabaseClient";
 
-export default function ToursPage() {
-  const sb = useMemo(() => getSupabase(), []);
+type Tour = {
+  id: string;
+  slug: string;
+  title_vi: string;
+  title_en: string;
+  description_vi: string;
+  description_en: string;
+  location_vi: string;
+  location_en: string;
+  duration: string;
+  price_vnd: number;
+  cover_url: string;
+};
+
+export default function ToursPage({ params }: { params: { lang: "vi" | "en" } }) {
+  const lang = params.lang;
+  const supabase = useMemo(() => getSupabase(), []);
+
   const [tours, setTours] = useState<Tour[]>([]);
   const [loading, setLoading] = useState(true);
 
-  async function load() {
+  async function loadTours() {
     setLoading(true);
-    const { data } = await sb
+
+    const { data } = await supabase
       .from("tours")
-      .select("id,slug,title,subtitle,location,duration,price_vnd,cover_url,visible")
+      .select(`
+        id,slug,duration,price_vnd,cover_url,
+        title_vi,title_en,
+        description_vi,description_en,
+        location_vi,location_en
+      `)
       .eq("visible", true)
       .order("sort_order", { ascending: true });
+
     setTours((data ?? []) as Tour[]);
     setLoading(false);
   }
 
   useEffect(() => {
-    load();
-    const ch = sb
-      .channel("realtime-tours-list")
-      .on("postgres_changes", { event: "*", schema: "public", table: "tours" }, () => load())
-      .subscribe();
-    return () => { sb.removeChannel(ch); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    loadTours();
   }, []);
 
   return (
     <main className="container-od py-10">
-      <h1 className="text-3xl font-semibold">Tours</h1>
-      <p className="mt-2 text-slate-600">Danh sách tour cập nhật realtime.</p>
+      <h1 className="text-3xl font-semibold mb-6">
+        {lang === "vi" ? "Danh sách tour" : "Tour list"}
+      </h1>
 
       {loading ? (
-        <div className="mt-6 card p-6 text-slate-600">Đang tải…</div>
+        <div className="card p-6">Loading…</div>
       ) : (
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {tours.map((t) => <TourCard key={t.id} tour={t} />)}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tours.map((tour) => (
+            <TourCard key={tour.id} tour={tour} lang={lang} />
+          ))}
         </div>
       )}
     </main>

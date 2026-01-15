@@ -1,23 +1,27 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+
+const locales = ["vi", "en"];
+const defaultLocale = "vi";
 
 export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname;
+  const { pathname } = request.nextUrl;
 
-  // Nếu đã có /vi hoặc /en thì không redirect
-  if (pathname.startsWith("/vi") || pathname.startsWith("/en") || pathname.startsWith("/admin")) {
+  // Bỏ qua static files
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.includes(".")
+  ) {
     return;
   }
 
-  const lang = request.headers.get("accept-language") || "";
-  const isEN = lang.toLowerCase().includes("en");
+  const hasLocale = locales.some(
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`)
+  );
 
-  const url = request.nextUrl.clone();
-  url.pathname = isEN ? "/en" : "/vi";
-
-  return NextResponse.redirect(url);
+  if (!hasLocale) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${defaultLocale}${pathname}`;
+    return NextResponse.redirect(url);
+  }
 }
-
-export const config = {
-  matcher: ["/"],
-};

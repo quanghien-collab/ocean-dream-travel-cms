@@ -9,9 +9,10 @@ export default function TopBar() {
   if (pathname.startsWith("/admin")) return null;
 
   function switchLang(lang: "vi" | "en") {
-    const newPath = pathname.replace(/^\/(vi|en)/, `/${lang}`);
-    router.push(newPath === pathname ? `/${lang}` : newPath);
-  }
+  const path = pathname.replace(/^\/(vi|en)/, "");
+  router.push(`/${lang}${path}`);
+}
+
 
   return (
     <div style={{ background: "#0a6ed1", color: "white" }}>
